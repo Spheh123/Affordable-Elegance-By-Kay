@@ -1,0 +1,16 @@
+{
+  "name": "affordable-elegance-by-kay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx serve .",
+    "build": "echo Static site ready"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^9.1.2",
+    "@netlify/functions": "^3.0.0",
+    "openai": "^4.104.0"
+  },
+  "devDependencies": {}
+}

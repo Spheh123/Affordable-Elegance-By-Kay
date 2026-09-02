@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Affordable Elegance by Kay | Book Online</title>
+    <meta
+      name="description"
+      content="Affordable Elegance by Kay booking system for Johannesburg, Midrand, and Pretoria salon services."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Affordable Elegance by Kay home">
+        <img src="assets/Profile pic.jpeg" alt="Affordable Elegance by Kay profile" />
+        <span>Affordable Elegance by Kay</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#booking">Book</a>
+        <a href="#services">Services</a>
+        <a href="#branches">Branches</a>
+        <a href="admin/">Admin</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <video autoplay muted loop playsinline poster="assets/Banner.jpeg">
+          <source src="assets/Johannesburg Branch.mp4" type="video/mp4" />
+        </video>
+        <div class="hero-overlay">
+          <p class="notice">Spring Special valid till 30 September</p>
+          <h1>Affordable Elegance by Kay</h1>
+          <p>
+            Custom frontal ponytails, wig installations, sew-ins, lashes, nails,
+            premium bundles, and one-on-one masterclasses.
+          </p>
+          <a class="primary-action" href="#booking">Book an appointment</a>
+        </div>
+      </section>
+
+      <section class="cash-notice" aria-label="Payment notice">
+        NOTICE: We no longer accept cash payments due to counterfeit banknotes. EFT or Capitec transfer only.
+      </section>
+
+      <section id="booking" class="booking-shell">
+        <div class="section-heading">
+          <p>Smart booking</p>
+          <h2>Reserve your appointment</h2>
+        </div>
+
+        <div class="booking-layout">
+          <form id="bookingForm" class="booking-form">
+            <div class="field-group">
+              <label for="branch">Branch</label>
+              <select id="branch" name="branch" required></select>
+            </div>
+
+            <div class="field-group">
+              <label for="service">Service</label>
+              <select id="service" name="service" required></select>
+            </div>
+
+            <div class="two-column">
+              <div class="field-group">
+                <label for="bookingDate">Preferred date</label>
+                <input id="bookingDate" name="bookingDate" type="date" required />
+              </div>
+              <div class="field-group">
+                <label for="bookingTime">Preferred time</label>
+                <select id="bookingTime" name="bookingTime" required></select>
+              </div>
+            </div>
+
+            <div class="two-column">
+              <div class="field-group">
+                <label for="fullName">Full name</label>
+                <input id="fullName" name="fullName" autocomplete="name" required />
+              </div>
+              <div class="field-group">
+                <label for="phone">Phone number</label>
+                <input id="phone" name="phone" autocomplete="tel" required />
+              </div>
+            </div>
+
+            <div class="two-column">
+              <div class="field-group">
+                <label for="whatsapp">WhatsApp number</label>
+                <input id="whatsapp" name="whatsapp" autocomplete="tel" required />
+              </div>
+              <div class="field-group">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" placeholder="Optional until salon email is set" />
+              </div>
+            </div>
+
+            <div class="two-column">
+              <div class="field-group conditional" data-show-for="lace">
+                <label for="laceType">Lace type</label>
+                <select id="laceType" name="laceType">
+                  <option value="">Not applicable</option>
+                  <option>Jean</option>
+                  <option>Transparent</option>
+                  <option>HD</option>
+                  <option>Lagos Hairline</option>
+                </select>
+              </div>
+              <div class="field-group conditional" data-show-for="midrand">
+                <label for="plucking">Midrand plucking preference</label>
+                <select id="plucking" name="plucking">
+                  <option value="">Not applicable</option>
+                  <option>Fork Method / Lines</option>
+                  <option>Normal Plucking</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="notes">Special requests or notes</label>
+              <textarea id="notes" name="notes" rows="3"></textarea>
+            </div>
+
+            <fieldset class="payment-choice">
+              <legend>Payment option</legend>
+              <label><input type="radio" name="paymentOption" value="deposit" checked /> Pay required deposit</label>
+              <label><input type="radio" name="paymentOption" value="full" /> Pay full amount now</label>
+            </fieldset>
+
+            <button class="primary-button" type="submit">Create payment window</button>
+          </form>
+
+          <aside class="booking-summary" aria-live="polite">
+            <h3>Booking summary</h3>
+            <dl id="priceSummary"></dl>
+            <div class="branch-note" id="branchPolicy"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="paymentPanel" class="payment-panel hidden" aria-live="polite">
+        <div class="section-heading">
+          <p>Payment window</p>
+          <h2>Upload proof within <span id="countdown">15:00</span></h2>
+        </div>
+        <div class="payment-grid">
+          <div class="bank-box">
+            <h3>Banking details</h3>
+            <dl>
+              <dt>Bank</dt><dd>Capitec Bank</dd>
+              <dt>Account holder</dt><dd>Mrs PK Bisaso</dd>
+              <dt>Account number</dt><dd>1726218692</dd>
+              <dt>Capitec linked mobile</dt><dd>0824950500</dd>
+              <dt>Reference</dt><dd id="paymentReference"></dd>
+            </dl>
+            <p>Use immediate payment when paying from another bank. Your appointment is confirmed only once payment is verified.</p>
+          </div>
+
+          <form id="proofForm" class="proof-form">
+            <label for="proofFiles">Proof of payment screenshot or PDF</label>
+            <input id="proofFiles" name="proofFiles" type="file" accept="image/*,.pdf" multiple required />
+            <small>Maximum 2 files per booking.</small>
+            <button class="primary-button" type="submit">Submit proof</button>
+          </form>
+        </div>
+        <div id="verificationResult" class="verification-result"></div>
+      </section>
+
+      <section id="services" class="content-section">
+        <div class="section-heading">
+          <p>Services</p>
+          <h2>Popular booking categories</h2>
+        </div>
+        <div id="serviceCards" class="service-grid"></div>
+      </section>
+
+      <section id="branches" class="content-section">
+        <div class="section-heading">
+          <p>Branches</p>
+          <h2>Choose your nearest salon</h2>
+        </div>
+        <div id="branchCards" class="branch-grid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>WhatsApp: <a href="https://wa.me/27816664395">081 666 4395</a></p>
+      <p>Instagram: @elegant_luxe_by_kay</p>
+    </footer>
+
+    <script src="salon-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

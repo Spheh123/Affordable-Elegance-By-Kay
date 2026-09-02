@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin | Affordable Elegance by Kay</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../">
+        <img src="../assets/Profile pic.jpeg" alt="Affordable Elegance by Kay profile" />
+        <span>Salon Admin</span>
+      </a>
+      <nav>
+        <a href="../">Website</a>
+        <a href="#bookings">Bookings</a>
+        <a href="#services">Services</a>
+        <a href="#branches">Branches</a>
+      </nav>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-hero">
+        <div>
+          <p>Control room</p>
+          <h1>Bookings, payments, services, and branch rules.</h1>
+        </div>
+        <button id="resetDemo" class="secondary-button" type="button">Reset demo data</button>
+      </section>
+
+      <section class="stats-grid" aria-label="Booking stats">
+        <article><span id="pendingCount">0</span><p>Needs review</p></article>
+        <article><span id="confirmedCount">0</span><p>Confirmed</p></article>
+        <article><span id="serviceCount">0</span><p>Active services</p></article>
+      </section>
+
+      <section id="bookings" class="admin-section">
+        <div class="section-heading">
+          <p>Payment verification</p>
+          <h2>Bookings</h2>
+        </div>
+        <div id="bookingRows" class="admin-list"></div>
+      </section>
+
+      <section id="services" class="admin-section">
+        <div class="section-heading">
+          <p>Service manager</p>
+          <h2>Add or edit services</h2>
+        </div>
+        <form id="serviceForm" class="admin-form">
+          <input type="hidden" id="serviceId" />
+          <div class="two-column">
+            <label>Service name <input id="serviceName" required /></label>
+            <label>Category <input id="serviceCategory" required /></label>
+          </div>
+          <div class="two-column">
+            <label>Normal price <input id="servicePrice" type="number" min="0" required /></label>
+            <label>Special price <input id="serviceSpecial" type="number" min="0" placeholder="Optional" /></label>
+          </div>
+          <div class="two-column">
+            <label>Duration minutes <input id="serviceDuration" type="number" min="30" step="30" required /></label>
+            <label>Deposit rule
+              <select id="serviceDeposit">
+                <option value="percent">50% deposit</option>
+                <option value="full">Full payment required</option>
+              </select>
+            </label>
+          </div>
+          <label>Service picture <input id="serviceImage" type="file" accept="image/*" /></label>
+          <fieldset>
+            <legend>Available branches</legend>
+            <label><input type="checkbox" name="branch" value="johannesburg" /> Johannesburg</label>
+            <label><input type="checkbox" name="branch" value="midrand" /> Midrand</label>
+            <label><input type="checkbox" name="branch" value="pretoria" /> Pretoria</label>
+          </fieldset>
+          <button class="primary-button" type="submit">Save service</button>
+        </form>
+        <div id="serviceRows" class="admin-list"></div>
+      </section>
+
+      <section id="branches" class="admin-section">
+        <div class="section-heading">
+          <p>Branch rules</p>
+          <h2>Policies shown during booking</h2>
+        </div>
+        <div id="branchRows" class="admin-list"></div>
+      </section>
+    </main>
+
+    <script src="../salon-data.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>
