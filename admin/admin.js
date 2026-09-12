@@ -177,7 +177,7 @@ async function saveService(form) {
     duration: Number(document.querySelector("#serviceDuration").value),
     depositType: document.querySelector("#serviceDeposit").value,
     branches: [...document.querySelectorAll('[name="branch"]:checked')].map((input) => input.value),
-    image: imageFile ? await fileToDataUrl(imageFile) : existing?.image || "assets/Banner.jpeg",
+    image: imageFile ? await fileToDataUrl(imageFile) : existing?.image || "assets/banner-image.jpeg",
     tags: existing?.tags || []
   };
   const index = state.services.findIndex((item) => item.id === id);
