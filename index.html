@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -9,6 +9,398 @@
       content="Affordable Elegance by Kay booking system for Johannesburg, Midrand, and Pretoria salon services."
     />
     <link rel="stylesheet" href="styles.css" />
+  
+    <style data-inline="critical-site-css">
+:root {
+  --black: #0a0a0a;
+  --ink: #1f1f1f;
+  --muted: #646464;
+  --line: #d9d9d9;
+  --soft: #f5f5f5;
+  --white: #ffffff;
+  --gold: #b99657;
+  --danger: #9f2020;
+  --success: #1f7a45;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--white);
+}
+
+a {
+  color: inherit;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px clamp(18px, 4vw, 54px);
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.brand img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+nav {
+  display: flex;
+  gap: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+nav a {
+  text-decoration: none;
+}
+
+.hero {
+  position: relative;
+  min-height: 82vh;
+  display: grid;
+  align-items: end;
+  overflow: hidden;
+  background: var(--black);
+}
+
+.hero video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.62;
+}
+
+.hero-overlay {
+  position: relative;
+  max-width: 760px;
+  padding: 0 clamp(20px, 5vw, 72px) 72px;
+  color: var(--white);
+}
+
+.notice {
+  display: inline-block;
+  margin: 0 0 18px;
+  padding: 8px 12px;
+  color: var(--black);
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 700px;
+  margin-bottom: 14px;
+  font-size: clamp(42px, 7vw, 92px);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.hero-overlay p:not(.notice) {
+  max-width: 610px;
+  font-size: clamp(18px, 2vw, 23px);
+  line-height: 1.45;
+}
+
+.primary-action,
+.primary-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--white);
+  background: var(--black);
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-action {
+  background: var(--white);
+  color: var(--black);
+}
+
+.cash-notice {
+  padding: 14px clamp(20px, 5vw, 72px);
+  background: var(--black);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.booking-shell,
+.content-section,
+.payment-panel {
+  padding: 64px clamp(20px, 5vw, 72px);
+}
+
+.section-heading p {
+  color: var(--gold);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.section-heading h2 {
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 1;
+}
+
+.booking-layout,
+.payment-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.booking-form,
+.booking-summary,
+.proof-form,
+.bank-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  background: var(--white);
+}
+
+.booking-summary,
+.bank-box {
+  background: var(--soft);
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+label,
+legend {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font: inherit;
+  background: var(--white);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.payment-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+
+.payment-choice label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.payment-choice input {
+  width: auto;
+  min-height: 0;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.2fr);
+  gap: 10px;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-weight: 800;
+}
+
+.branch-note {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.payment-panel {
+  background: var(--soft);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.proof-form small {
+  display: block;
+  margin: -8px 0 18px;
+  color: var(--muted);
+}
+
+.verification-result {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  font-weight: 700;
+}
+
+.verification-result.success {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.verification-result.warning {
+  border-color: var(--gold);
+}
+
+.verification-result.error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.service-grid,
+.branch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.service-card,
+.branch-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.service-card img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  display: block;
+}
+
+.service-card div,
+.branch-card {
+  padding: 18px;
+}
+
+.service-card p,
+.service-card span,
+.branch-card span {
+  color: var(--muted);
+}
+
+.branch-card span,
+.service-card span {
+  font-weight: 900;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 26px clamp(20px, 5vw, 72px);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+footer p {
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .site-header,
+  .booking-layout,
+  .payment-grid,
+  .two-column,
+  .service-grid,
+  .branch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-header {
+    display: grid;
+  }
+
+  nav {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .hero {
+    min-height: 76vh;
+  }
+}
+    </style>
   </head>
   <body>
     <header class="site-header">
@@ -192,3 +584,4 @@
     <script src="app.js"></script>
   </body>
 </html>
+
