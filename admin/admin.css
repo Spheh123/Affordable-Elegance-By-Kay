@@ -1,9 +1,7 @@
 .admin-main {
   min-height: 100vh;
   padding: 38px clamp(20px, 5vw, 76px) 78px;
-  background:
-    linear-gradient(135deg, rgba(255, 246, 251, 0.95), rgba(247, 240, 255, 0.9)),
-    var(--white);
+  background: var(--soft);
 }
 
 .admin-hero {
@@ -16,8 +14,8 @@
 
 .admin-hero p {
   margin-bottom: 9px;
-  color: var(--pink);
-  font-weight: 950;
+  color: var(--rose-dark);
+  font-weight: 880;
   text-transform: uppercase;
 }
 
@@ -25,8 +23,8 @@
   max-width: 860px;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(36px, 5vw, 72px);
-  line-height: 0.95;
+  font-size: clamp(36px, 5vw, 70px);
+  line-height: 0.98;
   letter-spacing: 0;
 }
 
@@ -34,11 +32,11 @@
   min-height: 46px;
   padding: 0 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--plum);
+  border-radius: 6px;
+  color: var(--ink);
   background: var(--white);
   box-shadow: var(--soft-shadow);
-  font-weight: 900;
+  font-weight: 820;
   cursor: pointer;
 }
 
@@ -51,9 +49,9 @@
 .stats-grid article,
 .admin-form,
 .admin-item {
-  border: 1px solid rgba(234, 221, 234, 0.9);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   box-shadow: var(--soft-shadow);
 }
 
@@ -62,15 +60,15 @@
 }
 
 .stats-grid span {
-  color: var(--plum);
+  color: var(--ink);
   font-size: 44px;
-  font-weight: 950;
+  font-weight: 900;
 }
 
 .stats-grid p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 760;
 }
 
 .admin-section {
@@ -105,7 +103,7 @@
   min-height: 40px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--muted);
   background: var(--soft);
 }
@@ -113,7 +111,7 @@
 .admin-form input[type="checkbox"] {
   width: auto;
   min-height: 0;
-  accent-color: var(--pink);
+  accent-color: var(--rose-dark);
 }
 
 .admin-list {
@@ -144,29 +142,29 @@
   min-height: 29px;
   align-items: center;
   padding: 0 10px;
-  border-radius: 8px;
-  color: var(--plum);
-  background: var(--soft-2);
+  border-radius: 6px;
+  color: var(--rose-dark);
+  background: var(--blush);
   font-size: 12px;
-  font-weight: 950;
+  font-weight: 850;
   text-transform: uppercase;
 }
 
 .status.confirmed {
   color: var(--success);
-  background: rgba(144, 240, 208, 0.28);
+  background: rgba(45, 115, 86, 0.12);
 }
 
 .status.needs_review,
 .status.awaiting_payment {
-  color: #8a5d00;
-  background: rgba(217, 173, 92, 0.18);
+  color: #75571f;
+  background: rgba(201, 166, 107, 0.18);
 }
 
 .status.cancelled,
 .status.rejected {
   color: var(--danger);
-  background: rgba(188, 35, 71, 0.12);
+  background: rgba(163, 58, 58, 0.12);
 }
 
 .admin-actions {
@@ -179,16 +177,16 @@
 .admin-actions button {
   min-height: 38px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--plum);
+  border-radius: 6px;
+  color: var(--ink);
   background: var(--white);
-  font-weight: 900;
+  font-weight: 780;
   cursor: pointer;
 }
 
 .admin-actions button:hover,
 .secondary-button:hover {
-  border-color: rgba(255, 79, 163, 0.38);
+  border-color: var(--rose);
 }
 
 @media (max-width: 900px) {
