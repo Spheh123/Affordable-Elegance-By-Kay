@@ -1,8 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
     <title>Admin | Affordable Elegance by Kay</title>
     <link rel="stylesheet" href="../styles.css" />
     <link rel="stylesheet" href="admin.css" />
@@ -240,6 +241,38 @@ h1 {
   font-size: 14px;
   font-weight: 760;
   text-align: center;
+}
+
+.process-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 clamp(20px, 5vw, 76px);
+  background: var(--line);
+}
+
+.process-strip article {
+  min-height: 172px;
+  padding: 26px 22px;
+  background: var(--white);
+}
+
+.process-strip span {
+  color: var(--champagne);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.process-strip h3 {
+  margin: 18px 0 8px;
+  font-size: 20px;
+}
+
+.process-strip p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .booking-shell,
@@ -571,6 +604,7 @@ footer p {
   .booking-layout,
   .payment-grid,
   .two-column,
+  .process-strip,
   .service-grid,
   .branch-grid {
     grid-template-columns: 1fr;
@@ -698,6 +732,29 @@ footer p {
   margin: 4px 0 0;
   color: var(--muted);
   font-weight: 760;
+}
+
+.admin-message {
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  margin-top: 14px;
+  padding: 0 18px;
+  border: 1px solid rgba(45, 115, 86, 0.22);
+  border-radius: 8px;
+  color: var(--success);
+  background: rgba(45, 115, 86, 0.08);
+  font-weight: 800;
+  opacity: 0;
+  transition: 180ms ease;
+}
+
+.admin-message.visible {
+  min-height: 46px;
+  max-height: 120px;
+  display: flex;
+  align-items: center;
+  opacity: 1;
 }
 
 .admin-section {
@@ -843,6 +900,7 @@ footer p {
       <nav>
         <a href="../">Website</a>
         <a href="#bookings">Bookings</a>
+        <a href="#settings">Settings</a>
         <a href="#services">Services</a>
         <a href="#branches">Branches</a>
       </nav>
@@ -861,6 +919,31 @@ footer p {
         <article><span id="pendingCount">0</span><p>Needs review</p></article>
         <article><span id="confirmedCount">0</span><p>Confirmed</p></article>
         <article><span id="serviceCount">0</span><p>Active services</p></article>
+      </section>
+      <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
+
+      <section id="settings" class="admin-section">
+        <div class="section-heading">
+          <p>Business settings</p>
+          <h2>Specials, notices, and payment rules</h2>
+        </div>
+        <form id="businessForm" class="admin-form">
+          <label>Top announcement <input id="bannerNoticeInput" required /></label>
+          <label>Payment notice <textarea id="cashNoticeInput" rows="3" required></textarea></label>
+          <div class="two-column">
+            <label>Deposit percentage <input id="depositPercentageInput" type="number" min="0" max="100" required /></label>
+            <label>Payment window minutes <input id="paymentWindowInput" type="number" min="5" max="60" required /></label>
+          </div>
+          <div class="two-column">
+            <label>Bank name <input id="bankNameInput" required /></label>
+            <label>Account holder <input id="bankHolderInput" required /></label>
+          </div>
+          <div class="two-column">
+            <label>Account number <input id="bankAccountInput" required /></label>
+            <label>Linked mobile <input id="bankMobileInput" required /></label>
+          </div>
+          <button class="primary-button" type="submit">Save business settings</button>
+        </form>
       </section>
 
       <section id="bookings" class="admin-section">
@@ -920,6 +1003,7 @@ footer p {
     <script src="admin.js"></script>
   </body>
 </html>
+
 
 
 

@@ -11,6 +11,13 @@ const paymentPanel = document.querySelector("#paymentPanel");
 const countdown = document.querySelector("#countdown");
 const paymentReference = document.querySelector("#paymentReference");
 const verificationResult = document.querySelector("#verificationResult");
+const bannerNotice = document.querySelector("#bannerNotice");
+const cashNotice = document.querySelector("#cashNotice");
+const paymentWindowStat = document.querySelector("#paymentWindowStat");
+const bankName = document.querySelector("#bankName");
+const bankHolder = document.querySelector("#bankHolder");
+const bankAccount = document.querySelector("#bankAccount");
+const bankMobile = document.querySelector("#bankMobile");
 
 let activeBooking = null;
 let timer = null;
@@ -48,6 +55,7 @@ async function hydrateState() {
     populateBranches();
     populateServices();
     populateTimes();
+    renderBusinessContent();
     renderCards();
   } catch (error) {
     return;
@@ -146,6 +154,17 @@ function selectedService() {
 
 function selectedBranch() {
   return loadState().branches.find((branch) => branch.id === branchSelect.value);
+}
+
+function renderBusinessContent() {
+  const state = loadState();
+  bannerNotice.textContent = state.business.bannerNotice || "Premium beauty bookings now open";
+  cashNotice.textContent = `NOTICE: ${state.business.cashNotice || "EFT or Capitec transfer only."}`;
+  paymentWindowStat.textContent = `${state.business.paymentWindowMinutes || 15} min`;
+  bankName.textContent = state.business.bank?.name || "Capitec Bank";
+  bankHolder.textContent = state.business.bank?.accountHolder || "Mrs PK Bisaso";
+  bankAccount.textContent = state.business.bank?.accountNumber || "1726218692";
+  bankMobile.textContent = state.business.bank?.linkedMobile || "0824950500";
 }
 
 function updateBookingUi() {
@@ -314,6 +333,7 @@ dateInput.addEventListener("change", populateTimes);
 bookingForm.addEventListener("input", updateBookingUi);
 
 dateInput.min = new Date().toISOString().split("T")[0];
+renderBusinessContent();
 populateBranches();
 populateServices();
 populateTimes();

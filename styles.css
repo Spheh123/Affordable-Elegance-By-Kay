@@ -232,6 +232,38 @@ h1 {
   text-align: center;
 }
 
+.process-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 clamp(20px, 5vw, 76px);
+  background: var(--line);
+}
+
+.process-strip article {
+  min-height: 172px;
+  padding: 26px 22px;
+  background: var(--white);
+}
+
+.process-strip span {
+  color: var(--champagne);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.process-strip h3 {
+  margin: 18px 0 8px;
+  font-size: 20px;
+}
+
+.process-strip p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .booking-shell,
 .content-section,
 .payment-panel {
@@ -561,6 +593,7 @@ footer p {
   .booking-layout,
   .payment-grid,
   .two-column,
+  .process-strip,
   .service-grid,
   .branch-grid {
     grid-template-columns: 1fr;

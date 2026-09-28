@@ -1,5 +1,6 @@
 const STORAGE_KEY = "aebk-state-v1";
 let stateCache = null;
+let messageTimer = null;
 
 function loadState() {
   if (stateCache) return stateCache;
@@ -40,10 +41,30 @@ function currency(value) {
   return `R${Number(value || 0).toLocaleString("en-ZA")}`;
 }
 
+function showMessage(message) {
+  const messageBox = document.querySelector("#adminMessage");
+  messageBox.textContent = message;
+  messageBox.classList.add("visible");
+  clearTimeout(messageTimer);
+  messageTimer = setTimeout(() => messageBox.classList.remove("visible"), 3200);
+}
+
 function renderStats(state) {
-  document.querySelector("#pendingCount").textContent = state.bookings.filter((b) => b.status === "needs_review").length;
+  document.querySelector("#pendingCount").textContent = state.bookings.filter((b) => ["awaiting_payment", "needs_review"].includes(b.status)).length;
   document.querySelector("#confirmedCount").textContent = state.bookings.filter((b) => b.status === "confirmed").length;
   document.querySelector("#serviceCount").textContent = state.services.length;
+}
+
+function renderBusinessSettings(state) {
+  const business = state.business;
+  document.querySelector("#bannerNoticeInput").value = business.bannerNotice || "";
+  document.querySelector("#cashNoticeInput").value = business.cashNotice || "";
+  document.querySelector("#depositPercentageInput").value = business.depositPercentage || 50;
+  document.querySelector("#paymentWindowInput").value = business.paymentWindowMinutes || 15;
+  document.querySelector("#bankNameInput").value = business.bank?.name || "";
+  document.querySelector("#bankHolderInput").value = business.bank?.accountHolder || "";
+  document.querySelector("#bankAccountInput").value = business.bank?.accountNumber || "";
+  document.querySelector("#bankMobileInput").value = business.bank?.linkedMobile || "";
 }
 
 function updateBooking(id, status) {
@@ -54,6 +75,7 @@ function updateBooking(id, status) {
   booking.updatedAt = new Date().toISOString();
   saveState(state);
   render();
+  showMessage(`Booking ${booking.reference} updated to ${status.replace("_", " ")}.`);
 }
 
 function renderBookings(state) {
@@ -153,10 +175,33 @@ function renderBranches(state) {
 function render() {
   const state = loadState();
   renderStats(state);
+  renderBusinessSettings(state);
   renderBookings(state);
   renderServices(state);
   renderBranches(state);
 }
+
+document.querySelector("#businessForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const state = loadState();
+  state.business = {
+    ...state.business,
+    bannerNotice: document.querySelector("#bannerNoticeInput").value.trim(),
+    cashNotice: document.querySelector("#cashNoticeInput").value.trim(),
+    depositPercentage: Number(document.querySelector("#depositPercentageInput").value),
+    paymentWindowMinutes: Number(document.querySelector("#paymentWindowInput").value),
+    bank: {
+      ...state.business.bank,
+      name: document.querySelector("#bankNameInput").value.trim(),
+      accountHolder: document.querySelector("#bankHolderInput").value.trim(),
+      accountNumber: document.querySelector("#bankAccountInput").value.trim(),
+      linkedMobile: document.querySelector("#bankMobileInput").value.trim()
+    }
+  };
+  saveState(state);
+  render();
+  showMessage("Business settings saved. The public website will use these details.");
+});
 
 document.querySelector("#serviceForm").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -187,6 +232,7 @@ async function saveService(form) {
   form.reset();
   document.querySelector("#serviceId").value = "";
   render();
+  showMessage("Service saved. Prices, specials, and images are updated.");
 }
 
 function fileToDataUrl(file) {

@@ -71,6 +71,29 @@
   font-weight: 760;
 }
 
+.admin-message {
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  margin-top: 14px;
+  padding: 0 18px;
+  border: 1px solid rgba(45, 115, 86, 0.22);
+  border-radius: 8px;
+  color: var(--success);
+  background: rgba(45, 115, 86, 0.08);
+  font-weight: 800;
+  opacity: 0;
+  transition: 180ms ease;
+}
+
+.admin-message.visible {
+  min-height: 46px;
+  max-height: 120px;
+  display: flex;
+  align-items: center;
+  opacity: 1;
+}
+
 .admin-section {
   padding-top: 56px;
 }
