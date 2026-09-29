@@ -13,8 +13,11 @@ The public website lets clients:
 - Upload proof of payment for review.
 
 The admin portal lets the salon:
+- Use a 30-day availability board to see open days, full days, closed days, and next available slots.
 - Use a daily bookings calendar to see appointments by date, branch, and status.
+- Add phone bookings, walk-ins, or last-minute bookings directly from admin.
 - View new bookings.
+- Call or WhatsApp a client from the booking record.
 - See proof of payment attached to each booking.
 - Approve, review, reject, or cancel bookings.
 - Edit service names, categories, prices, special prices, duration, deposit rules, available branches, and service pictures.
@@ -37,17 +40,33 @@ The admin portal lets the salon:
 ## Admin Review Flow
 
 1. The owner opens `/admin/`.
-2. The **Daily bookings calendar** shows bookings for the selected date.
-3. The owner can filter the calendar by branch and status.
-4. The calendar shows appointment time, service, client, branch, payment amount, balance, and status.
-5. New bookings also appear under **Bookings** for payment review.
-6. Each booking shows the client, branch, date, time, payment amount, balance, reference, and proof file.
-7. The owner checks the proof against the bank account.
-8. The owner clicks:
+2. The **30-day availability board** shows which days have open slots, which days are full, and which days are closed.
+3. The **Daily bookings calendar** shows bookings for the selected date.
+4. The owner can filter the calendar by branch and status.
+5. The calendar shows appointment time, service, client, branch, payment amount, balance, status, and client contact links.
+6. New bookings also appear under **Bookings** for payment review.
+7. Each booking shows the client, branch, date, time, payment amount, balance, reference, and proof file.
+8. The owner checks the proof against the bank account.
+9. The owner clicks:
    - **Approve** when the funds/proof are accepted.
    - **Review** when the proof needs manual checking.
    - **Reject** if payment is wrong or invalid.
    - **Cancel** if the client cancels or the booking cannot be accepted.
+
+## 30-Day Availability Board
+
+The **30-day availability board** is for capacity planning.
+
+It lets the owner:
+- Choose a branch.
+- Choose the service/duration she wants to check.
+- See the next 30 days from any selected start date.
+- See days marked as open, almost full, full, closed, or walk-ins.
+- See the next open slot.
+- See the best day for last-minute clients.
+- Quickly decide whether she can accept a phone booking or walk-in.
+
+This is especially useful when a client calls and asks, “Do you have space today or tomorrow?” The owner can check the board and immediately see the best available day and time.
 
 ## Calendar View
 
@@ -62,6 +81,18 @@ It lets the owner:
 - See the expected value of booked services for the selected day.
 
 This is useful before opening each morning because the owner can quickly see who is coming in, what service they booked, whether payment is confirmed, and which branch the appointment belongs to.
+
+## Quick Add Booking
+
+The **Quick Add** form is for bookings that do not start on the public website.
+
+Use it when:
+- A client books by phone.
+- A client sends a WhatsApp message.
+- A client walks in.
+- The owner wants to block a slot manually.
+
+The owner chooses the branch, service, date, open time, payment status, and notes. The booking is added to the same admin calendar and bookings list as website bookings.
 
 ## Admin Settings
 
@@ -107,12 +138,14 @@ Important: if the browser still says **Not Secure**, that is usually a Netlify/d
 4. Show the payment window and reference.
 5. Upload a test proof.
 6. Open `/admin/`.
-7. Show the booking in the **Daily bookings calendar**.
-8. Show the same booking in the **Bookings** review list.
-9. Approve or review the booking.
-10. Edit a service price or special.
-11. Update the announcement in Business settings.
-12. Refresh the website and show that the public content updates.
+7. Show the **30-day availability board** and explain open/full/closed days.
+8. Show the booking in the **Daily bookings calendar**.
+9. Show the same booking in the **Bookings** review list.
+10. Add a manual phone/walk-in booking using **Quick Add**.
+11. Approve or review the booking.
+12. Edit a service price or special.
+13. Update the announcement in Business settings.
+14. Refresh the website and show that the public content updates.
 
 ## Important Next Upgrade
 

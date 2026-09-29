@@ -85,6 +85,90 @@ function statusLabel(status) {
   return String(status || "pending").replaceAll("_", " ");
 }
 
+function dayKey(dateValue) {
+  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date(`${dateValue}T00:00:00`).getDay()];
+}
+
+function shortDate(dateValue) {
+  return new Intl.DateTimeFormat("en-ZA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short"
+  }).format(new Date(`${dateValue}T00:00:00`));
+}
+
+function servicePrice(service, branchId) {
+  if (branchId === "midrand" && service?.midrandPrice) return service.midrandPrice;
+  if (service?.specialPrice) return service.specialPrice;
+  return service?.price || 0;
+}
+
+function referenceFor(name) {
+  const clean = (name || "CLIENT").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  return `AEK-${clean}-${Date.now().toString().slice(-5)}`;
+}
+
+function activeBooking(booking) {
+  return activeStatuses.includes(booking.status);
+}
+
+function roundedCurrentMinutes() {
+  const now = new Date();
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  return Math.ceil(minutesNow / 30) * 30;
+}
+
+function slotCandidates(branch, dateValue, duration = 30) {
+  const hours = branch?.opening?.[dayKey(dateValue)];
+  if (!hours) return [];
+  const [start, end] = hours.map(minutes);
+  const slots = [];
+  const minimum = dateValue === todayValue() ? roundedCurrentMinutes() : start;
+  for (let slot = start; slot + Number(duration || 30) <= end; slot += 30) {
+    if (slot >= minimum) slots.push(`${String(Math.floor(slot / 60)).padStart(2, "0")}:${String(slot % 60).padStart(2, "0")}`);
+  }
+  return slots;
+}
+
+function availableStarts(state, branch, service, dateValue) {
+  if (!branch || !service || !branch.opening?.[dayKey(dateValue)]) return [];
+  const duration = Number(service.duration || 30);
+  const slots = slotCandidates(branch, dateValue, duration);
+  if (branch.bookingMode === "walk-ins") return slots;
+
+  return slots.filter((slot) => {
+    const slotStart = minutes(slot);
+    const slotEnd = slotStart + duration;
+    return !state.bookings.some((booking) => {
+      if (booking.branchId !== branch.id || booking.date !== dateValue || !activeBooking(booking)) return false;
+      const existingStart = minutes(booking.time);
+      const existingEnd = existingStart + Number(booking.duration || 30);
+      return slotStart < existingEnd && slotEnd > existingStart;
+    });
+  });
+}
+
+function phoneDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function whatsappNumber(value) {
+  const digits = phoneDigits(value);
+  if (!digits) return "";
+  if (digits.startsWith("0")) return `27${digits.slice(1)}`;
+  return digits;
+}
+
+function renderClientLinks(booking) {
+  const phone = booking.client?.phone || booking.client?.whatsapp || "";
+  const tel = phoneDigits(phone);
+  const wa = whatsappNumber(booking.client?.whatsapp || phone);
+  const links = [];
+  if (tel) links.push(`<a href="tel:${tel}">Call client</a>`);
+  if (wa) links.push(`<a href="https://wa.me/${wa}" target="_blank" rel="noreferrer">WhatsApp</a>`);
+  return links.length ? `<p class="client-links">${links.join(" | ")}</p>` : "";
+}
+
 function showMessage(message) {
   const messageBox = document.querySelector("#adminMessage");
   messageBox.textContent = message;
@@ -109,6 +193,98 @@ function renderBusinessSettings(state) {
   document.querySelector("#bankHolderInput").value = business.bank?.accountHolder || "";
   document.querySelector("#bankAccountInput").value = business.bank?.accountNumber || "";
   document.querySelector("#bankMobileInput").value = business.bank?.linkedMobile || "";
+}
+
+function renderAvailabilityFilters(state) {
+  const branchSelect = document.querySelector("#availabilityBranch");
+  const serviceSelect = document.querySelector("#availabilityService");
+  const selectedBranch = branchSelect.value || state.branches[0]?.id || "";
+  const selectedService = serviceSelect.value;
+
+  branchSelect.innerHTML = state.branches
+    .map((branch) => `<option value="${escapeHtml(branch.id)}">${escapeHtml(branch.name)}</option>`)
+    .join("");
+  branchSelect.value = state.branches.some((branch) => branch.id === selectedBranch) ? selectedBranch : state.branches[0]?.id || "";
+
+  const services = state.services.filter((service) => service.branches.includes(branchSelect.value));
+  serviceSelect.innerHTML = services
+    .map((service) => `<option value="${escapeHtml(service.id)}">${escapeHtml(service.name)} (${escapeHtml(service.duration)} min)</option>`)
+    .join("");
+  serviceSelect.value = services.some((service) => service.id === selectedService) ? selectedService : services[0]?.id || "";
+}
+
+function renderAvailability(state) {
+  const startInput = document.querySelector("#availabilityStart");
+  const startDate = startInput.value || todayValue();
+  startInput.value = startDate;
+
+  const branch = state.branches.find((item) => item.id === document.querySelector("#availabilityBranch").value);
+  const service = state.services.find((item) => item.id === document.querySelector("#availabilityService").value);
+  const days = Array.from({ length: 30 }, (_, index) => todayValue(index + dayOffset(startDate)));
+
+  let openDays = 0;
+  let bestDay = null;
+  let nextSlot = null;
+
+  const cards = days.map((dateValue) => {
+    const dayBookings = state.bookings.filter((booking) => booking.branchId === branch?.id && booking.date === dateValue && activeBooking(booking));
+    const hours = branch?.opening?.[dayKey(dateValue)];
+
+    if (!hours) {
+      return availabilityCard(dateValue, "closed", "Closed", dayBookings.length, "No branch hours set for this day.", []);
+    }
+
+    const slots = availableStarts(state, branch, service, dateValue);
+    if (branch.bookingMode === "walk-ins") {
+      if (slots.length) {
+        openDays += 1;
+        if (!nextSlot) nextSlot = `${shortDate(dateValue)} ${slots[0]}`;
+      }
+      return availabilityCard(dateValue, "walkins", "Walk-ins", dayBookings.length, slots.length ? "Open for walk-ins and last-minute clients." : "Walk-in day has no remaining open hours.", slots.slice(0, 4));
+    }
+
+    if (slots.length) {
+      openDays += 1;
+      if (!nextSlot) nextSlot = `${shortDate(dateValue)} ${slots[0]}`;
+      if (!bestDay || slots.length > bestDay.slots) bestDay = { dateValue, slots: slots.length };
+    }
+
+    const mood = slots.length === 0 ? "full" : slots.length <= 2 ? "tight" : "open";
+    const label = slots.length === 0 ? "Full" : slots.length <= 2 ? "Almost full" : dayBookings.length ? "Space open" : "Free day";
+    const details = slots.length === 0 ? "No appointment starts available." : `${slots.length} appointment starts open.`;
+    return availabilityCard(dateValue, mood, label, dayBookings.length, details, slots.slice(0, 4));
+  });
+
+  document.querySelector("#availabilityOpenDays").textContent = openDays;
+  document.querySelector("#availabilityBestDay").textContent = bestDay ? `${shortDate(bestDay.dateValue)} (${bestDay.slots})` : branch?.bookingMode === "walk-ins" ? "Walk-ins only" : "-";
+  document.querySelector("#availabilityNextSlot").textContent = nextSlot || "-";
+  document.querySelector("#availabilityRows").innerHTML = cards.join("");
+}
+
+function dayOffset(dateValue) {
+  const today = new Date(`${todayValue()}T00:00:00`);
+  const start = new Date(`${dateValue}T00:00:00`);
+  return Math.round((start - today) / 86400000);
+}
+
+function availabilityCard(dateValue, mood, label, bookedCount, details, slots) {
+  const slotChips = slots.length
+    ? `<div class="availability-slots">${slots.map((slot) => `<span>${escapeHtml(slot)}</span>`).join("")}</div>`
+    : `<div class="availability-slots"><span>No slots</span></div>`;
+  return `
+    <article class="availability-day ${escapeHtml(mood)}">
+      <div class="availability-date">
+        <div>${escapeHtml(shortDate(dateValue))}</div>
+        <span>${escapeHtml(label)}</span>
+      </div>
+      <div>
+        <strong>${escapeHtml(bookedCount)}</strong>
+        <p>${bookedCount === 1 ? "active booking" : "active bookings"}</p>
+      </div>
+      <p>${escapeHtml(details)}</p>
+      ${slotChips}
+    </article>
+  `;
 }
 
 function renderCalendarFilters(state) {
@@ -161,6 +337,7 @@ function renderCalendar(state) {
           <h3>${escapeHtml(booking.client?.name)} - ${escapeHtml(booking.serviceName)}</h3>
           <p>${escapeHtml(booking.branchName)} | Ref ${escapeHtml(booking.reference)} | ${escapeHtml(booking.client?.phone || booking.client?.whatsapp || "")}</p>
           <p>Paid now: ${currency(booking.amountDue)} | Balance: ${currency(booking.balance)}</p>
+          ${renderClientLinks(booking)}
         </div>
         <span class="status ${escapeHtml(booking.status)}">${escapeHtml(statusLabel(booking.status))}</span>
       </article>
@@ -194,6 +371,7 @@ function renderBookings(state) {
           <h3>${escapeHtml(booking.client.name)} - ${escapeHtml(booking.serviceName)}</h3>
           <p>${escapeHtml(booking.branchName)} | ${escapeHtml(booking.date)} at ${escapeHtml(booking.time)} | Ref ${escapeHtml(booking.reference)}</p>
           <p>Paid now: ${currency(booking.amountDue)} | Balance: ${currency(booking.balance)}</p>
+          ${renderClientLinks(booking)}
           ${renderProofLinks(booking)}
           <span class="status ${escapeHtml(booking.status)}">${escapeHtml(statusLabel(booking.status))}</span>
         </div>
@@ -273,12 +451,51 @@ function renderBranches(state) {
     .join("");
 }
 
+function renderQuickBookingFields(state) {
+  const branchSelect = document.querySelector("#quickBranch");
+  const serviceSelect = document.querySelector("#quickService");
+  const selectedBranch = branchSelect.value || state.branches[0]?.id || "";
+  const selectedService = serviceSelect.value;
+
+  branchSelect.innerHTML = state.branches
+    .map((branch) => `<option value="${escapeHtml(branch.id)}">${escapeHtml(branch.name)}</option>`)
+    .join("");
+  branchSelect.value = state.branches.some((branch) => branch.id === selectedBranch) ? selectedBranch : state.branches[0]?.id || "";
+
+  const services = state.services.filter((service) => service.branches.includes(branchSelect.value));
+  serviceSelect.innerHTML = services
+    .map((service) => `<option value="${escapeHtml(service.id)}">${escapeHtml(service.name)}</option>`)
+    .join("");
+  serviceSelect.value = services.some((service) => service.id === selectedService) ? selectedService : services[0]?.id || "";
+  renderQuickTimes(state);
+}
+
+function renderQuickTimes(state) {
+  const branch = state.branches.find((item) => item.id === document.querySelector("#quickBranch").value);
+  const service = state.services.find((item) => item.id === document.querySelector("#quickService").value);
+  const dateValue = document.querySelector("#quickDate").value || todayValue();
+  document.querySelector("#quickDate").value = dateValue;
+
+  const timeSelect = document.querySelector("#quickTime");
+  const slots = availableStarts(state, branch, service, dateValue);
+  if (!slots.length) {
+    timeSelect.innerHTML = `<option value="">No open slots</option>`;
+    return;
+  }
+
+  const prefix = branch?.bookingMode === "walk-ins" ? "Walk-in" : "Available";
+  timeSelect.innerHTML = slots.map((slot) => `<option value="${escapeHtml(slot)}">${prefix} ${escapeHtml(slot)}</option>`).join("");
+}
+
 function render() {
   const state = loadState();
   renderStats(state);
   renderBusinessSettings(state);
+  renderAvailabilityFilters(state);
+  renderAvailability(state);
   renderCalendarFilters(state);
   renderCalendar(state);
+  renderQuickBookingFields(state);
   renderBookings(state);
   renderServices(state);
   renderBranches(state);
@@ -309,6 +526,63 @@ document.querySelector("#businessForm").addEventListener("submit", (event) => {
 document.querySelector("#serviceForm").addEventListener("submit", (event) => {
   event.preventDefault();
   saveService(event.target);
+});
+
+document.querySelector("#quickBookingForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const state = loadState();
+  const branch = state.branches.find((item) => item.id === document.querySelector("#quickBranch").value);
+  const service = state.services.find((item) => item.id === document.querySelector("#quickService").value);
+  const time = document.querySelector("#quickTime").value;
+  if (!branch || !service || !time) {
+    showMessage("Choose a branch, service, date, and open time before adding a booking.");
+    return;
+  }
+
+  const paymentMode = document.querySelector("#quickPayment").value;
+  const total = servicePrice(service, branch.id);
+  const amountDue =
+    paymentMode === "full"
+      ? total
+      : paymentMode === "none"
+        ? 0
+        : service.depositType === "full"
+          ? total
+          : Math.ceil(total * (Number(state.business.depositPercentage || 50) / 100));
+  const clientName = document.querySelector("#quickClientName").value.trim();
+
+  state.bookings.push({
+    id: crypto.randomUUID(),
+    reference: referenceFor(clientName),
+    status: document.querySelector("#quickStatus").value,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    source: "admin",
+    branchId: branch.id,
+    branchName: branch.name,
+    serviceId: service.id,
+    serviceName: service.name,
+    duration: service.duration,
+    total,
+    amountDue,
+    balance: total - amountDue,
+    date: document.querySelector("#quickDate").value,
+    time,
+    client: {
+      name: clientName,
+      phone: document.querySelector("#quickClientPhone").value.trim(),
+      whatsapp: document.querySelector("#quickClientPhone").value.trim(),
+      email: ""
+    },
+    notes: document.querySelector("#quickNotes").value.trim(),
+    proofFiles: []
+  });
+
+  saveState(state);
+  event.target.reset();
+  document.querySelector("#quickDate").value = todayValue();
+  render();
+  showMessage("Booking added to the calendar and payment review list.");
 });
 
 async function saveService(form) {
@@ -352,10 +626,18 @@ document.querySelector("#resetDemo").addEventListener("click", () => {
   render();
 });
 
+document.querySelector("#availabilityStart").value = todayValue();
+document.querySelector("#availabilityStart").addEventListener("change", () => render());
+document.querySelector("#availabilityBranch").addEventListener("change", () => render());
+document.querySelector("#availabilityService").addEventListener("change", () => render());
 document.querySelector("#calendarDate").value = todayValue();
 document.querySelector("#calendarDate").addEventListener("change", () => render());
 document.querySelector("#calendarBranch").addEventListener("change", () => render());
 document.querySelector("#calendarStatus").addEventListener("change", () => render());
+document.querySelector("#quickDate").value = todayValue();
+document.querySelector("#quickBranch").addEventListener("change", () => render());
+document.querySelector("#quickService").addEventListener("change", () => renderQuickTimes(loadState()));
+document.querySelector("#quickDate").addEventListener("change", () => renderQuickTimes(loadState()));
 document.querySelectorAll("[data-calendar-jump]").forEach((button) => {
   button.addEventListener("click", () => {
     document.querySelector("#calendarDate").value = todayValue(Number(button.dataset.calendarJump || 0));

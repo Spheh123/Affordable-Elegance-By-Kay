@@ -899,7 +899,9 @@ footer p {
       </a>
       <nav>
         <a href="../">Website</a>
+        <a href="#availability">30 Days</a>
         <a href="#calendar">Calendar</a>
+        <a href="#quickBooking">Quick Add</a>
         <a href="#bookings">Bookings</a>
         <a href="#settings">Settings</a>
         <a href="#services">Services</a>
@@ -922,6 +924,35 @@ footer p {
         <article><span id="serviceCount">0</span><p>Active services</p></article>
       </section>
       <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
+
+      <section id="availability" class="admin-section">
+        <div class="section-heading">
+          <p>30-day capacity</p>
+          <h2>Availability and open slots</h2>
+        </div>
+        <div class="availability-panel">
+          <div class="availability-toolbar" aria-label="Availability controls">
+            <label>
+              Start date
+              <input id="availabilityStart" type="date" />
+            </label>
+            <label>
+              Branch
+              <select id="availabilityBranch"></select>
+            </label>
+            <label>
+              Service duration
+              <select id="availabilityService"></select>
+            </label>
+          </div>
+          <div class="availability-summary" aria-label="Availability summary">
+            <article><span id="availabilityOpenDays">0</span><p>days with space</p></article>
+            <article><span id="availabilityBestDay">-</span><p>best day for last-minute clients</p></article>
+            <article><span id="availabilityNextSlot">-</span><p>next open slot</p></article>
+          </div>
+          <div id="availabilityRows" class="availability-grid"></div>
+        </div>
+      </section>
 
       <section id="calendar" class="admin-section">
         <div class="section-heading">
@@ -979,6 +1010,45 @@ footer p {
 
           <div id="calendarRows" class="calendar-list"></div>
         </div>
+      </section>
+
+      <section id="quickBooking" class="admin-section">
+        <div class="section-heading">
+          <p>Front desk</p>
+          <h2>Add a phone, walk-in, or last-minute booking</h2>
+        </div>
+        <form id="quickBookingForm" class="admin-form quick-booking-form">
+          <div class="two-column">
+            <label>Client name <input id="quickClientName" required /></label>
+            <label>Phone / WhatsApp <input id="quickClientPhone" required /></label>
+          </div>
+          <div class="two-column">
+            <label>Branch <select id="quickBranch"></select></label>
+            <label>Service <select id="quickService"></select></label>
+          </div>
+          <div class="two-column">
+            <label>Date <input id="quickDate" type="date" required /></label>
+            <label>Time <select id="quickTime"></select></label>
+          </div>
+          <div class="two-column">
+            <label>Status
+              <select id="quickStatus">
+                <option value="confirmed">Confirmed</option>
+                <option value="awaiting_payment">Awaiting payment</option>
+                <option value="needs_review">Needs review</option>
+              </select>
+            </label>
+            <label>Payment recorded
+              <select id="quickPayment">
+                <option value="deposit">Deposit / partial payment</option>
+                <option value="full">Full payment</option>
+                <option value="none">No payment yet</option>
+              </select>
+            </label>
+          </div>
+          <label>Notes <textarea id="quickNotes" rows="3" placeholder="Walk-in, phone booking, stylist note, colour request, or client preference"></textarea></label>
+          <button class="primary-button" type="submit">Add booking to calendar</button>
+        </form>
       </section>
 
       <section id="settings" class="admin-section">
