@@ -899,6 +899,7 @@ footer p {
       </a>
       <nav>
         <a href="../">Website</a>
+        <a href="#calendar">Calendar</a>
         <a href="#bookings">Bookings</a>
         <a href="#settings">Settings</a>
         <a href="#services">Services</a>
@@ -921,6 +922,64 @@ footer p {
         <article><span id="serviceCount">0</span><p>Active services</p></article>
       </section>
       <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
+
+      <section id="calendar" class="admin-section">
+        <div class="section-heading">
+          <p>Salon diary</p>
+          <h2>Daily bookings calendar</h2>
+        </div>
+        <div class="calendar-panel">
+          <div class="calendar-toolbar" aria-label="Calendar controls">
+            <label>
+              Date
+              <input id="calendarDate" type="date" />
+            </label>
+            <label>
+              Branch
+              <select id="calendarBranch">
+                <option value="all">All branches</option>
+              </select>
+            </label>
+            <label>
+              Status
+              <select id="calendarStatus">
+                <option value="active">Active bookings</option>
+                <option value="all">All statuses</option>
+                <option value="awaiting_payment">Awaiting payment</option>
+                <option value="needs_review">Needs review</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </label>
+            <div class="calendar-jump" aria-label="Quick date choices">
+              <button type="button" data-calendar-jump="0">Today</button>
+              <button type="button" data-calendar-jump="1">Tomorrow</button>
+              <button type="button" data-calendar-jump="7">7 days</button>
+            </div>
+          </div>
+
+          <div class="calendar-summary" aria-label="Selected day summary">
+            <article>
+              <span id="calendarDayLabel">Today</span>
+              <strong id="calendarBookingCount">0</strong>
+              <p>appointments</p>
+            </article>
+            <article>
+              <span>Confirmed</span>
+              <strong id="calendarConfirmedCount">0</strong>
+              <p>ready to serve</p>
+            </article>
+            <article>
+              <span>Expected value</span>
+              <strong id="calendarRevenue">R0</strong>
+              <p>booked services</p>
+            </article>
+          </div>
+
+          <div id="calendarRows" class="calendar-list"></div>
+        </div>
+      </section>
 
       <section id="settings" class="admin-section">
         <div class="section-heading">

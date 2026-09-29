@@ -1,6 +1,7 @@
 const STORAGE_KEY = "aebk-state-v1";
 let stateCache = null;
 let messageTimer = null;
+const activeStatuses = ["awaiting_payment", "needs_review", "confirmed"];
 
 function loadState() {
   if (stateCache) return stateCache;
@@ -41,6 +42,49 @@ function currency(value) {
   return `R${Number(value || 0).toLocaleString("en-ZA")}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function todayValue(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function minutes(time) {
+  const [hour, minute] = String(time || "00:00").split(":").map(Number);
+  return hour * 60 + minute;
+}
+
+function addMinutes(time, duration) {
+  const total = minutes(time) + Number(duration || 30);
+  const hour = Math.floor(total / 60);
+  const minute = total % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function formatLongDate(dateValue) {
+  return new Intl.DateTimeFormat("en-ZA", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(new Date(`${dateValue}T00:00:00`));
+}
+
+function statusLabel(status) {
+  return String(status || "pending").replaceAll("_", " ");
+}
+
 function showMessage(message) {
   const messageBox = document.querySelector("#adminMessage");
   messageBox.textContent = message;
@@ -67,6 +111,63 @@ function renderBusinessSettings(state) {
   document.querySelector("#bankMobileInput").value = business.bank?.linkedMobile || "";
 }
 
+function renderCalendarFilters(state) {
+  const branchSelect = document.querySelector("#calendarBranch");
+  const selectedBranch = branchSelect.value || "all";
+  branchSelect.innerHTML = [
+    `<option value="all">All branches</option>`,
+    ...state.branches.map((branch) => `<option value="${escapeHtml(branch.id)}">${escapeHtml(branch.name)}</option>`)
+  ].join("");
+  branchSelect.value = [...branchSelect.options].some((option) => option.value === selectedBranch) ? selectedBranch : "all";
+}
+
+function renderCalendar(state) {
+  const dateInput = document.querySelector("#calendarDate");
+  const branchFilter = document.querySelector("#calendarBranch").value || "all";
+  const statusFilter = document.querySelector("#calendarStatus").value || "active";
+  const selectedDate = dateInput.value || todayValue();
+  dateInput.value = selectedDate;
+
+  const bookings = state.bookings
+    .filter((booking) => booking.date === selectedDate)
+    .filter((booking) => branchFilter === "all" || booking.branchId === branchFilter)
+    .filter((booking) => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "active") return activeStatuses.includes(booking.status);
+      return booking.status === statusFilter;
+    })
+    .sort((a, b) => minutes(a.time) - minutes(b.time));
+
+  document.querySelector("#calendarDayLabel").textContent = formatLongDate(selectedDate);
+  document.querySelector("#calendarBookingCount").textContent = bookings.length;
+  document.querySelector("#calendarConfirmedCount").textContent = bookings.filter((booking) => booking.status === "confirmed").length;
+  document.querySelector("#calendarRevenue").textContent = currency(
+    bookings
+      .filter((booking) => !["cancelled", "rejected"].includes(booking.status))
+      .reduce((sum, booking) => sum + Number(booking.total || 0), 0)
+  );
+
+  const rows = document.querySelector("#calendarRows");
+  if (bookings.length === 0) {
+    rows.innerHTML = `<div class="calendar-empty">No bookings for this date and filter yet.</div>`;
+    return;
+  }
+
+  rows.innerHTML = bookings
+    .map((booking) => `
+      <article class="calendar-booking">
+        <div class="calendar-time">${escapeHtml(booking.time)} - ${escapeHtml(addMinutes(booking.time, booking.duration))}</div>
+        <div>
+          <h3>${escapeHtml(booking.client?.name)} - ${escapeHtml(booking.serviceName)}</h3>
+          <p>${escapeHtml(booking.branchName)} | Ref ${escapeHtml(booking.reference)} | ${escapeHtml(booking.client?.phone || booking.client?.whatsapp || "")}</p>
+          <p>Paid now: ${currency(booking.amountDue)} | Balance: ${currency(booking.balance)}</p>
+        </div>
+        <span class="status ${escapeHtml(booking.status)}">${escapeHtml(statusLabel(booking.status))}</span>
+      </article>
+    `)
+    .join("");
+}
+
 function updateBooking(id, status) {
   const state = loadState();
   const booking = state.bookings.find((item) => item.id === id);
@@ -90,11 +191,11 @@ function renderBookings(state) {
     .map((booking) => `
       <article class="admin-item">
         <div>
-          <h3>${booking.client.name} - ${booking.serviceName}</h3>
-          <p>${booking.branchName} | ${booking.date} at ${booking.time} | Ref ${booking.reference}</p>
+          <h3>${escapeHtml(booking.client.name)} - ${escapeHtml(booking.serviceName)}</h3>
+          <p>${escapeHtml(booking.branchName)} | ${escapeHtml(booking.date)} at ${escapeHtml(booking.time)} | Ref ${escapeHtml(booking.reference)}</p>
           <p>Paid now: ${currency(booking.amountDue)} | Balance: ${currency(booking.balance)}</p>
           ${renderProofLinks(booking)}
-          <span class="status ${booking.status}">${booking.status.replace("_", " ")}</span>
+          <span class="status ${escapeHtml(booking.status)}">${escapeHtml(statusLabel(booking.status))}</span>
         </div>
         <div class="admin-actions">
           <button type="button" onclick="updateBooking('${booking.id}', 'confirmed')">Approve</button>
@@ -110,7 +211,7 @@ function renderBookings(state) {
 function renderProofLinks(booking) {
   if (!booking.proofFiles?.length) return "";
   return `<p>${booking.proofFiles
-    .map((proof) => `<a href="${proof.dataUrl}" target="_blank" rel="noreferrer">${proof.name}</a>`)
+    .map((proof) => `<a href="${escapeHtml(proof.dataUrl)}" target="_blank" rel="noreferrer">${escapeHtml(proof.name)}</a>`)
     .join(" | ")}</p>`;
 }
 
@@ -144,9 +245,9 @@ function renderServices(state) {
     .map((service) => `
       <article class="admin-item">
         <div>
-          <h3>${service.name}</h3>
-          <p>${service.category} | ${currency(service.specialPrice || service.price)} | ${service.duration} min | ${service.depositType === "full" ? "Full payment" : "50% deposit"}</p>
-          <p>${service.branches.join(", ")}</p>
+          <h3>${escapeHtml(service.name)}</h3>
+          <p>${escapeHtml(service.category)} | ${currency(service.specialPrice || service.price)} | ${escapeHtml(service.duration)} min | ${service.depositType === "full" ? "Full payment" : "50% deposit"}</p>
+          <p>${escapeHtml(service.branches.join(", "))}</p>
         </div>
         <div class="admin-actions">
           <button type="button" onclick="editService('${service.id}')">Edit</button>
@@ -162,9 +263,9 @@ function renderBranches(state) {
     .map((branch) => `
       <article class="admin-item">
         <div>
-          <h3>${branch.name}</h3>
-          <p>${branch.address}</p>
-          <p>${branch.policy}</p>
+          <h3>${escapeHtml(branch.name)}</h3>
+          <p>${escapeHtml(branch.address)}</p>
+          <p>${escapeHtml(branch.policy)}</p>
           <span class="status">${branch.bookingMode === "walk-ins" ? "Walk-ins only" : "Appointments"}</span>
         </div>
       </article>
@@ -176,6 +277,8 @@ function render() {
   const state = loadState();
   renderStats(state);
   renderBusinessSettings(state);
+  renderCalendarFilters(state);
+  renderCalendar(state);
   renderBookings(state);
   renderServices(state);
   renderBranches(state);
@@ -247,6 +350,17 @@ function fileToDataUrl(file) {
 document.querySelector("#resetDemo").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   render();
+});
+
+document.querySelector("#calendarDate").value = todayValue();
+document.querySelector("#calendarDate").addEventListener("change", () => render());
+document.querySelector("#calendarBranch").addEventListener("change", () => render());
+document.querySelector("#calendarStatus").addEventListener("change", () => render());
+document.querySelectorAll("[data-calendar-jump]").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelector("#calendarDate").value = todayValue(Number(button.dataset.calendarJump || 0));
+    render();
+  });
 });
 
 render();
