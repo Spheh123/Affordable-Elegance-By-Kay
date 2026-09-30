@@ -454,6 +454,19 @@ dd {
   color: var(--white);
 }
 
+.payment-urgency {
+  padding: 14px;
+  border: 1px solid rgba(163, 58, 58, 0.28);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(163, 58, 58, 0.18);
+}
+
+.payment-urgency strong {
+  color: var(--white);
+  font-weight: 950;
+}
+
 .hidden {
   display: none !important;
 }

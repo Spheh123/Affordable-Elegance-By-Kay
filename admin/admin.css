@@ -4,6 +4,57 @@
   background: var(--soft);
 }
 
+body.admin-locked > .site-header,
+body.admin-locked > .admin-main {
+  display: none;
+}
+
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(15, 13, 13, 0.82), rgba(15, 13, 13, 0.36)),
+    url("../assets/banner-image.jpeg") center / cover;
+}
+
+.admin-login-card {
+  width: min(100%, 430px);
+  display: grid;
+  gap: 18px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.93);
+  box-shadow: var(--shadow);
+}
+
+.admin-login-card p {
+  margin: 0;
+  color: var(--rose-dark);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-login-card h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.admin-login-card label {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-login-message {
+  min-height: 20px;
+  color: var(--danger);
+  font-weight: 780;
+}
+
 .admin-hero {
   display: flex;
   align-items: end;
@@ -38,6 +89,13 @@
   box-shadow: var(--soft-shadow);
   font-weight: 820;
   cursor: pointer;
+}
+
+.admin-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 10px;
 }
 
 .stats-grid,
@@ -446,6 +504,18 @@
   color: var(--ink);
   background: var(--white);
   font-weight: 780;
+  cursor: pointer;
+}
+
+.text-action {
+  display: inline;
+  padding: 0;
+  border: 0;
+  color: var(--rose-dark);
+  background: transparent;
+  font: inherit;
+  font-weight: 850;
+  text-decoration: underline;
   cursor: pointer;
 }
 

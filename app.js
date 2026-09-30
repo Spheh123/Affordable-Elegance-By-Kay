@@ -18,6 +18,7 @@ const bankName = document.querySelector("#bankName");
 const bankHolder = document.querySelector("#bankHolder");
 const bankAccount = document.querySelector("#bankAccount");
 const bankMobile = document.querySelector("#bankMobile");
+const CLIENT_BOOKING_BRANCHES = ["johannesburg", "midrand"];
 
 let activeBooking = null;
 let timer = null;
@@ -36,14 +37,43 @@ function loadState() {
   return stateCache;
 }
 
-function saveState(state) {
+function cacheState(state) {
   stateCache = state;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  fetch("/api/data", {
-    method: "PUT",
+}
+
+function saveState(state) {
+  cacheState(state);
+}
+
+async function createRemoteBooking(booking) {
+  const response = await fetch("/api/bookings", {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(state)
-  }).catch(() => {});
+    body: JSON.stringify(booking)
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || "Booking could not be saved.");
+  return result.booking;
+}
+
+function replaceCachedBooking(booking) {
+  const state = loadState();
+  const index = state.bookings.findIndex((item) => item.reference === booking.reference || item.id === booking.id);
+  if (index >= 0) state.bookings[index] = booking;
+  else state.bookings.push(booking);
+  cacheState(state);
+}
+
+async function refreshPublicState() {
+  try {
+    const response = await fetch("/api/data");
+    if (!response.ok) return;
+    stateCache = await response.json();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateCache));
+  } catch (error) {
+    return;
+  }
 }
 
 async function hydrateState() {
@@ -90,6 +120,7 @@ function referenceFor(name) {
 function populateBranches() {
   const state = loadState();
   branchSelect.innerHTML = state.branches
+    .filter((branch) => CLIENT_BOOKING_BRANCHES.includes(branch.id))
     .map((branch) => `<option value="${branch.id}">${branch.name}</option>`)
     .join("");
 }
@@ -118,18 +149,16 @@ function populateTimes() {
     timeSelect.innerHTML = `<option value="">No appointment slots</option>`;
     return;
   }
-  const [start, end] = hours.map((time) => Number(time.replace(":", "")));
+  const [open, close] = hours.map(minutes);
+  const duration = Number(service?.duration || 30);
   const slots = [];
-  for (let hour = Math.floor(start / 100); hour < Math.floor(end / 100); hour += 1) {
-    for (const minute of ["00", "30"]) {
-      const stamp = `${String(hour).padStart(2, "0")}:${minute}`;
-      if (Number(stamp.replace(":", "")) < end) slots.push(stamp);
-    }
+  for (let slot = open; slot + duration <= close; slot += 30) {
+    slots.push(`${String(Math.floor(slot / 60)).padStart(2, "0")}:${String(slot % 60).padStart(2, "0")}`);
   }
   const availableSlots = slots.filter((slot) => {
     if (!service) return true;
     const slotStart = minutes(slot);
-    const slotEnd = slotStart + service.duration;
+    const slotEnd = slotStart + duration;
     return !state.bookings.some((booking) => {
       if (booking.branchId !== branch.id || booking.date !== selectedDate) return false;
       if (["cancelled", "rejected", "expired"].includes(booking.status)) return false;
@@ -236,16 +265,13 @@ async function verifyPayment(files) {
   formData.append("booking", JSON.stringify(activeBooking));
   [...files].slice(0, 2).forEach((file) => formData.append("proof", file));
 
-  try {
-    const response = await fetch("/api/verify-payment", { method: "POST", body: formData });
-    if (response.ok) return response.json();
-  } catch (error) {
-    return { status: "needs_review", confidence: 0, reason: "AI verification is not enabled in this local preview yet." };
-  }
-  return { status: "needs_review", confidence: 0, reason: "Proof received. Admin verification is required." };
+  const response = await fetch("/api/verify-payment", { method: "POST", body: formData });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.reason || "Proof could not be submitted.");
+  return result;
 }
 
-bookingForm.addEventListener("submit", (event) => {
+bookingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const state = loadState();
   const form = new FormData(bookingForm);
@@ -270,6 +296,7 @@ bookingForm.addEventListener("submit", (event) => {
     total,
     amountDue: due,
     balance: total - due,
+    paymentOption,
     date: form.get("bookingDate"),
     time: form.get("bookingTime"),
     client: {
@@ -283,12 +310,22 @@ bookingForm.addEventListener("submit", (event) => {
     plucking: form.get("plucking")
   };
 
-  state.bookings.push(activeBooking);
-  saveState(state);
-  paymentReference.textContent = reference;
-  paymentPanel.classList.remove("hidden");
-  paymentPanel.scrollIntoView({ behavior: "smooth" });
-  startCountdown(activeBooking.expiresAt);
+  try {
+    bookingForm.querySelector("button[type='submit']").disabled = true;
+    activeBooking = await createRemoteBooking(activeBooking);
+    state.bookings.push(activeBooking);
+    cacheState(state);
+    paymentReference.textContent = activeBooking.reference;
+    paymentPanel.classList.remove("hidden");
+    paymentPanel.scrollIntoView({ behavior: "smooth" });
+    startCountdown(activeBooking.expiresAt);
+    await refreshPublicState();
+  } catch (error) {
+    verificationResult.className = "verification-result error";
+    verificationResult.textContent = error.message || "That booking could not be created. Please try again.";
+  } finally {
+    bookingForm.querySelector("button[type='submit']").disabled = false;
+  }
 });
 
 proofForm.addEventListener("submit", async (event) => {
@@ -297,32 +334,31 @@ proofForm.addEventListener("submit", async (event) => {
   if (!activeBooking || files.length === 0 || files.length > 2) return;
 
   verificationResult.className = "verification-result";
-  verificationResult.textContent = "Proof received. AI is checking amount, date, reference, and recipient details...";
-  const proofFiles = await Promise.all([...files].map(fileToProofRecord));
-  const result = await verifyPayment(files);
+  verificationResult.textContent = "Proof received. Checking amount, date, reference, and recipient details...";
+  let result;
+  try {
+    result = await verifyPayment(files);
+  } catch (error) {
+    result = { status: "needs_review", confidence: 0, reason: error.message || "Admin review is required." };
+  }
 
   const state = loadState();
   const booking = state.bookings.find((item) => item.id === activeBooking.id);
-  booking.status = result.status === "approved" ? "confirmed" : "needs_review";
-  booking.aiResult = result;
-  booking.proofFiles = proofFiles;
-  saveState(state);
+  if (result.booking) {
+    replaceCachedBooking(result.booking);
+  } else if (booking) {
+    booking.status = result.status === "approved" ? "confirmed" : "needs_review";
+    booking.aiResult = result;
+    saveState(state);
+  }
 
-  verificationResult.className = `verification-result ${booking.status === "confirmed" ? "success" : "warning"}`;
+  const updatedBooking = result.booking || booking;
+  verificationResult.className = `verification-result ${updatedBooking.status === "confirmed" ? "success" : "warning"}`;
   verificationResult.textContent =
-    booking.status === "confirmed"
-      ? `Booking confirmed. Reference ${booking.reference}. Balance due: ${currency(booking.balance)}.`
+    updatedBooking.status === "confirmed"
+      ? `Booking confirmed. Reference ${updatedBooking.reference}. Balance due: ${currency(updatedBooking.balance)}.`
       : `Proof uploaded, but admin review is needed. Reason: ${result.reason}`;
 });
-
-function fileToProofRecord(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve({ name: file.name, type: file.type, dataUrl: reader.result });
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 branchSelect.addEventListener("change", () => {
   populateServices();

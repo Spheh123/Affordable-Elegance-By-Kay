@@ -1,6 +1,11 @@
 const STORAGE_KEY = "aebk-state-v1";
+const ADMIN_TOKEN_KEY = "aebk-admin-token";
+const SEEN_BOOKINGS_KEY = "aebk-seen-bookings";
 let stateCache = null;
 let messageTimer = null;
+let pollTimer = null;
+let authToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+let firstBookingSync = true;
 const activeStatuses = ["awaiting_payment", "needs_review", "confirmed"];
 
 function loadState() {
@@ -21,21 +26,66 @@ function saveState(state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   fetch("/api/data", {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(state)
-  }).catch(() => {});
+  }).then((response) => {
+    if (response.status === 401) showLogin("Your admin session expired. Please sign in again.");
+  }).catch(() => {
+    showMessage("Changes are saved in this browser, but the live database did not respond.");
+  });
 }
 
 async function hydrateState() {
+  await fetchAdminState({ notify: true });
+}
+
+function authHeaders() {
+  return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+}
+
+async function adminFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...authHeaders()
+    }
+  });
+}
+
+async function fetchAdminState({ notify = false } = {}) {
   try {
-    const response = await fetch("/api/data");
-    if (!response.ok) return;
+    const response = await adminFetch("/api/data");
+    if (response.status === 401) {
+      showLogin("Please sign in to continue.");
+      return;
+    }
+    if (!response.ok) throw new Error("Could not load admin data.");
     stateCache = await response.json();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stateCache));
     render();
+    if (notify) notifyNewBookings(stateCache);
   } catch (error) {
+    showMessage(error.message || "Could not refresh admin data.");
     return;
   }
+}
+
+function showLogin(message = "") {
+  document.body.classList.add("admin-locked");
+  document.querySelector("#adminLogin").hidden = false;
+  document.querySelector("#adminLoginMessage").textContent = message;
+  clearInterval(pollTimer);
+}
+
+function showAdmin() {
+  document.body.classList.remove("admin-locked");
+  document.querySelector("#adminLogin").hidden = true;
+}
+
+function startPolling() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => fetchAdminState({ notify: true }), 30000);
 }
 
 function currency(value) {
@@ -176,6 +226,105 @@ function showMessage(message) {
   clearTimeout(messageTimer);
   messageTimer = setTimeout(() => messageBox.classList.remove("visible"), 3200);
 }
+
+function mapsLink(address = "") {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+function confirmationMessage(booking, state) {
+  const branch = state.branches.find((item) => item.id === booking.branchId);
+  const address = branch?.address || booking.branchName;
+  const terms = branch?.policy || "Please arrive on time. Hair must be clean, relaxed, and oil-free where applicable. Cash is not accepted.";
+  return [
+    `Hi ${booking.client?.name || "beautiful"}, your Affordable Elegance by Kay booking is confirmed.`,
+    "",
+    `Service: ${booking.serviceName}`,
+    `Branch: ${booking.branchName}`,
+    `Address: ${address}`,
+    `Location: ${mapsLink(address)}`,
+    `Date: ${booking.date}`,
+    `Time: ${booking.time}`,
+    `Reference: ${booking.reference}`,
+    Number(booking.balance) > 0 ? `Balance due at appointment: ${currency(booking.balance)}` : "",
+    "",
+    `Reminder: ${terms}`,
+    "",
+    "Reply here if you need help before your appointment."
+  ].filter(Boolean).join("\n");
+}
+
+function confirmationUrl(booking, state) {
+  const number = whatsappNumber(booking.client?.whatsapp || booking.client?.phone);
+  if (!number) return "";
+  return `https://wa.me/${number}?text=${encodeURIComponent(confirmationMessage(booking, state))}`;
+}
+
+function renderAutomationLinks(booking, state) {
+  if (booking.status !== "confirmed") return "";
+  const url = confirmationUrl(booking, state);
+  return `
+    <p class="client-links">
+      ${url ? `<a href="${url}" target="_blank" rel="noreferrer">Send WhatsApp confirmation</a> | ` : ""}
+      <button type="button" class="text-action" onclick="sendConfirmation('${escapeHtml(booking.id)}')">Auto-send confirmation</button>
+    </p>
+  `;
+}
+
+function seenBookingSet() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_BOOKINGS_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSeenBookings(state) {
+  localStorage.setItem(SEEN_BOOKINGS_KEY, JSON.stringify(state.bookings.map((booking) => booking.id)));
+}
+
+function notifyNewBookings(state) {
+  const seen = seenBookingSet();
+  const newBookings = state.bookings.filter((booking) => booking.id && !seen.has(booking.id));
+  saveSeenBookings(state);
+
+  if (firstBookingSync) {
+    firstBookingSync = false;
+    return;
+  }
+
+  if (!newBookings.length) return;
+  const count = newBookings.length;
+  const latest = newBookings[newBookings.length - 1];
+  showMessage(`${count} new booking${count === 1 ? "" : "s"} submitted. Latest: ${latest.client?.name || latest.reference}.`);
+  document.title = `(${count}) New booking | Affordable Elegance`;
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("New Affordable Elegance booking", {
+      body: `${latest.client?.name || latest.reference} booked ${latest.serviceName} for ${latest.date} at ${latest.time}.`
+    });
+  }
+}
+
+async function sendConfirmation(id) {
+  const response = await adminFetch("/api/send-whatsapp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookingId: id })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (response.ok) {
+    await fetchAdminState();
+    showMessage("WhatsApp confirmation sent from the connected business number.");
+    return;
+  }
+  if (response.status === 503) {
+    showMessage("WhatsApp automation is not connected yet. Use the manual WhatsApp confirmation link for now.");
+    return;
+  }
+  showMessage(result.error || "Could not send WhatsApp confirmation.");
+}
+
+window.sendConfirmation = sendConfirmation;
 
 function renderStats(state) {
   document.querySelector("#pendingCount").textContent = state.bookings.filter((b) => ["awaiting_payment", "needs_review"].includes(b.status)).length;
@@ -338,6 +487,7 @@ function renderCalendar(state) {
           <p>${escapeHtml(booking.branchName)} | Ref ${escapeHtml(booking.reference)} | ${escapeHtml(booking.client?.phone || booking.client?.whatsapp || "")}</p>
           <p>Paid now: ${currency(booking.amountDue)} | Balance: ${currency(booking.balance)}</p>
           ${renderClientLinks(booking)}
+          ${renderAutomationLinks(booking, state)}
         </div>
         <span class="status ${escapeHtml(booking.status)}">${escapeHtml(statusLabel(booking.status))}</span>
       </article>
@@ -354,6 +504,7 @@ function updateBooking(id, status) {
   saveState(state);
   render();
   showMessage(`Booking ${booking.reference} updated to ${status.replace("_", " ")}.`);
+  if (status === "confirmed") sendConfirmation(id);
 }
 
 function renderBookings(state) {
@@ -372,6 +523,7 @@ function renderBookings(state) {
           <p>${escapeHtml(booking.branchName)} | ${escapeHtml(booking.date)} at ${escapeHtml(booking.time)} | Ref ${escapeHtml(booking.reference)}</p>
           <p>Paid now: ${currency(booking.amountDue)} | Balance: ${currency(booking.balance)}</p>
           ${renderClientLinks(booking)}
+          ${renderAutomationLinks(booking, state)}
           ${renderProofLinks(booking)}
           <span class="status ${escapeHtml(booking.status)}">${escapeHtml(statusLabel(booking.status))}</span>
         </div>
@@ -621,9 +773,47 @@ function fileToDataUrl(file) {
   });
 }
 
-document.querySelector("#resetDemo").addEventListener("click", () => {
-  localStorage.removeItem(STORAGE_KEY);
-  render();
+document.querySelector("#adminLoginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const password = document.querySelector("#adminPassword").value;
+  const messageBox = document.querySelector("#adminLoginMessage");
+  messageBox.textContent = "Checking password...";
+
+  try {
+    const response = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Could not sign in.");
+    authToken = result.token;
+    localStorage.setItem(ADMIN_TOKEN_KEY, authToken);
+    document.querySelector("#adminPassword").value = "";
+    showAdmin();
+    await hydrateState();
+    startPolling();
+    showMessage("Admin unlocked. New bookings will appear here.");
+  } catch (error) {
+    messageBox.textContent = error.message || "Incorrect password.";
+  }
+});
+
+document.querySelector("#enableAlerts").addEventListener("click", async () => {
+  if (!("Notification" in window)) {
+    showMessage("This browser does not support desktop notifications.");
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  showMessage(permission === "granted" ? "Desktop booking alerts are enabled." : "Desktop alerts were not enabled.");
+});
+
+document.querySelector("#refreshData").addEventListener("click", () => fetchAdminState({ notify: true }));
+
+document.querySelector("#logoutAdmin").addEventListener("click", () => {
+  authToken = "";
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+  showLogin("Signed out.");
 });
 
 document.querySelector("#availabilityStart").value = todayValue();
@@ -645,5 +835,9 @@ document.querySelectorAll("[data-calendar-jump]").forEach((button) => {
   });
 });
 
-render();
-hydrateState();
+if (authToken) {
+  showAdmin();
+  hydrateState().then(startPolling).catch(() => showLogin("Please sign in to continue."));
+} else {
+  showLogin();
+}

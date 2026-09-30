@@ -10,14 +10,18 @@ The public website lets clients:
 - Enter their contact details and special notes.
 - See the total price, required payment amount, balance, and duration.
 - Receive a unique payment reference.
+- See a clear instruction to make an immediate payment when paying from another bank.
 - Upload proof of payment for review.
 
 The admin portal lets the salon:
+- Sign in with a private admin password before viewing bookings or changing live data.
+- Receive in-admin alerts when new bookings are submitted while the portal is open.
 - Use a 30-day availability board to see open days, full days, closed days, and next available slots.
 - Use a daily bookings calendar to see appointments by date, branch, and status.
 - Add phone bookings, walk-ins, or last-minute bookings directly from admin.
 - View new bookings.
 - Call or WhatsApp a client from the booking record.
+- Send a prepared WhatsApp confirmation after approving a booking.
 - See proof of payment attached to each booking.
 - Approve, review, reject, or cancel bookings.
 - Edit service names, categories, prices, special prices, duration, deposit rules, available branches, and service pictures.
@@ -26,7 +30,7 @@ The admin portal lets the salon:
 ## Client Booking Flow
 
 1. A client opens the website and clicks **Book an appointment**.
-2. The client chooses a branch.
+2. The client chooses a branch. Pretoria is still shown on the website as a real branch, but it is not offered in the online appointment dropdown because it is walk-ins only.
 3. The site shows only services available at that branch.
 4. The client picks a date and time.
 5. The system checks existing bookings and hides times that are already taken.
@@ -36,22 +40,36 @@ The admin portal lets the salon:
 9. The payment panel opens with banking details and a countdown window.
 10. The client uploads proof of payment.
 11. The booking moves to admin review.
+12. The admin portal can alert the owner that a new booking needs attention.
 
 ## Admin Review Flow
 
 1. The owner opens `/admin/`.
-2. The **30-day availability board** shows which days have open slots, which days are full, and which days are closed.
-3. The **Daily bookings calendar** shows bookings for the selected date.
-4. The owner can filter the calendar by branch and status.
-5. The calendar shows appointment time, service, client, branch, payment amount, balance, status, and client contact links.
-6. New bookings also appear under **Bookings** for payment review.
-7. Each booking shows the client, branch, date, time, payment amount, balance, reference, and proof file.
-8. The owner checks the proof against the bank account.
-9. The owner clicks:
+2. The owner enters the private admin password.
+3. The **30-day availability board** shows which days have open slots, which days are full, and which days are closed.
+4. The **Daily bookings calendar** shows bookings for the selected date.
+5. The owner can filter the calendar by branch and status.
+6. The calendar shows appointment time, service, client, branch, payment amount, balance, status, and client contact links.
+7. New bookings also appear under **Bookings** for payment review.
+8. Each booking shows the client, branch, date, time, payment amount, balance, reference, and proof file.
+9. The owner checks the proof against the bank account.
+10. The owner clicks:
    - **Approve** when the funds/proof are accepted.
    - **Review** when the proof needs manual checking.
    - **Reject** if payment is wrong or invalid.
    - **Cancel** if the client cancels or the booking cannot be accepted.
+11. After approval, the admin portal prepares a WhatsApp confirmation message with the service, branch, address, location link, date, time, reference, balance, and branch terms.
+
+## Notifications And WhatsApp Automation
+
+The system now has two levels of notification:
+
+- **Ready now:** The admin portal can show new-booking alerts while it is open, and the owner can enable browser desktop notifications.
+- **Ready for connection:** The backend includes hooks for email/webhook booking alerts, WhatsApp booking alerts, WhatsApp confirmation messages, and scheduled WhatsApp reminders once the required provider keys are added in Netlify environment variables.
+
+For WhatsApp, the recommended professional setup is WhatsApp Business Platform through a provider such as Twilio or directly through Meta Cloud API. Once connected, approval can send the confirmation message from the business number instead of relying on a manual WhatsApp click.
+
+The reminder job is already built to check confirmed bookings every hour and send a reminder for the next day at the configured reminder hour. The owner still needs to confirm the exact reminder time and exact Terms and Conditions wording before the final automation settings are locked in.
 
 ## 30-Day Availability Board
 
@@ -119,6 +137,7 @@ The code includes Netlify security headers:
 - Content type protection.
 - Frame protection.
 - Admin no-index headers.
+- Admin password sessions for the admin portal and protected admin database updates.
 
 Important: if the browser still says **Not Secure**, that is usually a Netlify/domain setup issue, not the design code. Check these in Netlify:
 - The client must open the `https://` version of the website.
@@ -147,6 +166,17 @@ Important: if the browser still says **Not Secure**, that is usually a Netlify/d
 13. Update the announcement in Business settings.
 14. Refresh the website and show that the public content updates.
 
+## Automation Provider Setup
+
+To make WhatsApp fully automatic from the business number, connect a WhatsApp Business Platform provider and add these private values in Netlify:
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_WHATSAPP_FROM`
+- Optional `ADMIN_WHATSAPP_TO` for admin WhatsApp booking alerts.
+- Optional `REMINDER_HOUR_SAST` for the hour reminders should go out, for example `8`.
+
+Until those provider keys are connected, the admin portal still gives the owner a prepared WhatsApp confirmation link after approval so she can send the message manually.
+
 ## Important Next Upgrade
 
-Before using this for real private business operations, add proper admin login protection through Netlify Identity or another authentication provider. The current portal is functional, but production admin access should be protected with real authentication.
+The admin portal now has password protection. For a larger team later, upgrade to full user accounts with roles, password resets, and audit history. For WhatsApp automation, connect a WhatsApp Business Platform provider and add the provider keys in Netlify.
